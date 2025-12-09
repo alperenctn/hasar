@@ -7,6 +7,29 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+
+// server.js'nin en başına (diğer require'ların altına) ekleyin:
+console.log('📁 Mevcut dosyalar:', fs.readdirSync(__dirname));
+console.log('📊 Database.db var mı?', fs.existsSync('./database.db'));
+
+// Veritabanı bağlantısından sonra bu kodu ekleyin:
+const db = new sqlite3.Database('./database.db', (err) => {
+    if (err) {
+        console.error('Veritabanı bağlantı hatası:', err);
+    } else {
+        console.log('✅ Veritabanı bağlantısı başarılı');
+        
+        // Users tablosundaki kayıtları kontrol et
+        db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+            if (err) {
+                console.error('Users tablosu hatası:', err);
+            } else {
+                console.log(`👥 Users tablosunda ${row.count} kayıt var`);
+                console.log('🔍 Admin kontrolü:', row.count > 0 ? 'Admin VAR' : 'Admin YOK');
+            }
+        });
+    }
+});
 // Express uygulaması oluştur
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,14 +49,14 @@ app.use(session({
 }));
 
 // Veritabanı bağlantısı
-const db = new sqlite3.Database('./database.db', (err) => {
-    if (err) {
-        console.error('Veritabanı bağlantı hatası:', err);
-    } else {
-        console.log('✅ Veritabanı bağlantısı başarılı');
-        createTables();
-    }
-});
+// const db = new sqlite3.Database('./database.db', (err) => {
+//     if (err) {
+//         console.error('Veritabanı bağlantı hatası:', err);
+//     } else {
+//         console.log('✅ Veritabanı bağlantısı başarılı');
+//         createTables();
+//     }
+// });
 
 // Veritabanı tablolarını oluştur
 function createTables() {
@@ -191,18 +214,38 @@ app.post('/api/create-admin', async (req, res) => {
     const { username, password, fullname } = req.body;
     
     try {
-        const sifreliParola = await bcrypt.hash(password, 10);
-        
-        db.run('INSERT INTO users (username, password, fullname) VALUES (?, ?, ?)',
-            [username, sifreliParola, fullname],
-            function(err) {
-                if (err) {
-                    return res.status(500).json({ error: err.message });
-                }
-                res.json({ success: true, id: this.lastID });
+        // Önce bu kullanıcı adı var mı kontrol et
+        db.get('SELECT id FROM users WHERE username = ?', [username], async (err, user) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
             }
-        );
+            
+            if (user) {
+                return res.status(400).json({ error: 'Bu kullanıcı adı zaten kullanılıyor' });
+            }
+            
+            // Şifreyi hash'le
+            const sifreliParola = await bcrypt.hash(password, 10);
+            
+            // Kullanıcıyı ekle
+            db.run('INSERT INTO users (username, password, fullname) VALUES (?, ?, ?)',
+                [username, sifreliParola, fullname],
+                function(err) {
+                    if (err) {
+                        return res.status(500).json({ error: err.message });
+                    }
+                    
+                    console.log('✅ Yeni admin oluşturuldu:', username);
+                    res.json({ 
+                        success: true, 
+                        id: this.lastID,
+                        message: 'Admin başarıyla oluşturuldu'
+                    });
+                }
+            );
+        });
     } catch (error) {
+        console.error('Admin oluşturma hatası:', error);
         res.status(500).json({ error: 'Admin oluşturma hatası' });
     }
 });
@@ -461,4 +504,28 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu http://localhost:${PORT} adresinde çalışıyor`);
     console.log(`🌐 Site: ${process.env.SITE_URL || `http://localhost:${PORT}`}`);
+});
+
+// server.js'ye ekleyin (diğer API rotalarının yanına)
+app.post('/api/reset-admin', async (req, res) => {
+    const { username, newPassword } = req.body;
+    
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        db.run('UPDATE users SET password = ? WHERE username = ?',
+            [hashedPassword, username],
+            function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                
+                if (this.changes === 0) {
+                    return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+                }
+                
+                res.json({ success: true, message: 'Şifre sıfırlandı' });
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ error: 'Şifre sıfırlama hatası' });
+    }
 });
