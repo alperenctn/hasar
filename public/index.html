@@ -13,260 +13,561 @@
 <body>
     <!-- Giriş Sayfası -->
     <div id="giris-sayfasi" class="sayfa">
-        <div class="giris-kutusu">
-            <div class="logo">
-                <i class="fas fa-car-crash"></i>
-                <h1>Dosya Takip Sistemi</h1>
-                <p class="alt-baslik">alpberhasar.com</p>
+        <div class="giris-container">
+            <div class="giris-header">
+                <div class="logo">
+                    <i class="fas fa-car-crash"></i>
+                    <div>
+                        <h1>Hasar Takip Sistemi</h1>
+                        <p class="logo-alt">alpberhasar.com</p>
+                    </div>
+                </div>
+                <p class="giris-aciklama">Araç kazalarında sigorta tahkim dosya takip sistemi</p>
             </div>
             
-            <form id="giris-formu">
-                <div class="giris-alani">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="kullanici-adi" placeholder="Kullanıcı Adı" required>
+            <form id="giris-formu" class="giris-form">
+                <div class="input-group">
+                    <label for="kullanici-adi">
+                        <i class="fas fa-user"></i>
+                        <span>Kullanıcı Adı</span>
+                    </label>
+                    <input type="text" id="kullanici-adi" placeholder="Kullanıcı adınız" required>
                 </div>
                 
-                <div class="giris-alani">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="sifre" placeholder="Şifre" required>
+                <div class="input-group">
+                    <label for="sifre">
+                        <i class="fas fa-lock"></i>
+                        <span>Şifre</span>
+                    </label>
+                    <input type="password" id="sifre" placeholder="Şifreniz" required>
                 </div>
                 
-                <button type="submit" class="buton buton-ana">
-                    <i class="fas fa-sign-in-alt"></i> Giriş Yap
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Giriş Yap
                 </button>
             </form>
             
-            <div class="sistem-bilgi">
-                <p><i class="fas fa-info-circle"></i> Araç kazalarında sigorta tahkim dosya takip sistemi</p>
+            <div class="giris-footer">
+                <p><i class="fas fa-info-circle"></i> Avukatınız tarafından size verilen şifre ile giriş yapın</p>
             </div>
         </div>
     </div>
 
     <!-- Ana Sayfa -->
     <div id="ana-sayfa" class="sayfa gizli">
-        <!-- Üst Menü -->
-        <header class="ust-menu">
-            <div class="menu-sol">
-                <div class="logo-kucuk">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="app-logo">
                     <i class="fas fa-car-crash"></i>
-                    <h2>Dosya Takip</h2>
+                    <div>
+                        <h2>Hasar Takip</h2>
+                        <p class="app-subtitle">Dosyalarınız</p>
+                    </div>
                 </div>
-                <div class="hosgeldin" id="hosgeldin-mesaji">
+                <div class="user-info">
                     <i class="fas fa-user-circle"></i>
-                    <span>Hoş geldiniz</span>
+                    <span id="kullanici-isim">Kullanıcı</span>
                 </div>
             </div>
             
-            <div class="menu-sag">
-                <button class="menu-buton" id="ana-sayfa-buton" data-sayfa="dashboard">
+            <nav class="header-nav">
+                <button class="nav-btn active" data-page="dashboard">
                     <i class="fas fa-home"></i>
                     <span>Ana Sayfa</span>
                 </button>
-                <button class="menu-buton" id="dosya-buton" data-sayfa="vakalar">
-                    <i class="fas fa-folder"></i>
-                    <span>Dosyalarım</span>
-                </button>
-                <button class="menu-buton" id="yeni-buton" data-sayfa="yeni-vaka">
+                <button class="nav-btn" data-page="yeni-vaka">
                     <i class="fas fa-plus-circle"></i>
                     <span>Evrak Yükle</span>
                 </button>
-                <button class="menu-buton" id="cikis-buton">
+                <button class="nav-btn" id="cikis-btn">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Çıkış</span>
                 </button>
-            </div>
+            </nav>
         </header>
 
-        <!-- İstatistikler -->
-        <div id="dashboard" class="icerik-sayfa">
-            <div class="istatistikler">
-                <h3><i class="fas fa-chart-bar"></i> Sistem İstatistikleri</h3>
-                
-                <div class="istatistik-kartlar">
-                    <div class="istatistik-kart" id="toplam-kart">
-                        <div class="istatistik-deger" id="toplam-vaka">0</div>
-                        <div class="istatistik-baslik">Toplam Dosya</div>
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- İstatistikler -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="toplam-vaka">0</h3>
+                            <p>TORLAM</p>
+                        </div>
                     </div>
                     
-                    <div class="istatistik-kart beklemede" id="beklemede-kart">
-                        <div class="istatistik-deger" id="beklemede-vaka">0</div>
-                        <div class="istatistik-baslik">Bekleyen</div>
+                    <div class="stat-card beklemede">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="bekleyen-vaka">0</h3>
+                            <p>BERLEYEN</p>
+                        </div>
                     </div>
                     
-                    <div class="istatistik-kart sigortada" id="sigortada-kart">
-                        <div class="istatistik-deger" id="sigortada-vaka">0</div>
-                        <div class="istatistik-baslik">Sigortada</div>
+                    <div class="stat-card sigortada">
+                        <div class="stat-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="sigortada-vaka">0</h3>
+                            <p>SIGORTADA</p>
+                        </div>
                     </div>
                     
-                    <div class="istatistik-kart tahkimde" id="tahkimde-kart">
-                        <div class="istatistik-deger" id="tahkimde-vaka">0</div>
-                        <div class="istatistik-baslik">Tahkimde</div>
+                    <div class="stat-card tahkimde">
+                        <div class="stat-icon">
+                            <i class="fas fa-gavel"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="tahkimde-vaka">0</h3>
+                            <p>TAHKIMDE</p>
+                        </div>
                     </div>
                     
-                    <div class="istatistik-kart icrada" id="icrada-kart">
-                        <div class="istatistik-deger" id="icrada-vaka">0</div>
-                        <div class="istatistik-baslik">İcrada</div>
+                    <div class="stat-card icrada">
+                        <div class="stat-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="icrada-vaka">0</h3>
+                            <p>ICRADA</p>
+                        </div>
                     </div>
                     
-                    <div class="istatistik-kart ustasi" id="ustasi-kart">
-                        <div class="istatistik-deger" id="ustasi-vaka">0</div>
-                        <div class="istatistik-baslik">Ustası</div>
+                    <div class="stat-card ustasi">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="ustasi-vaka">0</h3>
+                            <p>USTASI</p>
+                        </div>
                     </div>
                     
-                    <div class="istatistik-kart bitti" id="bitti-kart">
-                        <div class="istatistik-deger" id="bitti-vaka">0</div>
-                        <div class="istatistik-baslik">Biten</div>
+                    <div class="stat-card bitti">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="bitti-vaka">0</h3>
+                            <p>BITTI</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Arama -->
-            <div class="arama-alani">
-                <h3><i class="fas fa-search"></i> Ara (Plaka, İsim, Dosya No...)</h3>
-                <div class="arama-kutusu">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="arama-input" placeholder="Plaka, araç sahibi veya dosya no ile ara...">
-                    <button class="buton buton-ana" id="arama-buton">Ara</button>
+            <!-- Arama ve Filtreleme -->
+            <section class="search-section">
+                <div class="search-header">
+                    <h3><i class="fas fa-search"></i> Ara (Plaka, İsim, Usta...)</h3>
                 </div>
                 
-                <div class="durum-filtreleri">
-                    <button class="durum-filtre aktif" data-durum="">Tümü</button>
-                    <button class="durum-filtre" data-durum="BEKLEMEDE">Bekleyen</button>
-                    <button class="durum-filtre" data-durum="SIGORTADA">Sigortada</button>
-                    <button class="durum-filtre" data-durum="TAHKIMDE">Tahkimde</button>
-                    <button class="durum-filtre" data-durum="ICRADA">İcrada</button>
-                    <button class="durum-filtre" data-durum="USTASI">Ustası</button>
-                    <button class="durum-filtre" data-durum="TAMAMLANDI">Biten</button>
-                </div>
-            </div>
-
-            <!-- Vaka Listesi -->
-            <div class="vaka-listesi" id="vaka-listesi">
-                <!-- Vakalar buraya yüklenecek -->
-                <div class="yukleniyor">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Vakalar yükleniyor...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Vaka Detay Sayfası -->
-        <div id="vaka-detay" class="icerik-sayfa gizli">
-            <button class="buton buton-ikincil" id="geri-buton">
-                <i class="fas fa-arrow-left"></i> Geri
-            </button>
-            
-            <div id="vaka-detay-icerik">
-                <!-- Vaka detayları buraya yüklenecek -->
-            </div>
-        </div>
-
-        <!-- Yeni Vaka Sayfası -->
-        <div id="yeni-vaka" class="icerik-sayfa gizli">
-            <div class="sayfa-baslik">
-                <h3><i class="fas fa-plus-circle"></i> Yeni Vaka Ekle</h3>
-                <button class="buton buton-ikincil" id="iptal-buton">
-                    <i class="fas fa-times"></i> İptal
-                </button>
-            </div>
-            
-            <form id="yeni-vaka-formu">
-                <div class="form-satiri">
-                    <div class="form-grup">
-                        <label for="dosya-no"><i class="fas fa-file-alt"></i> Dosya Numarası *</label>
-                        <input type="text" id="dosya-no" required placeholder="Örn: 2023-THK-001">
+                <div class="search-controls">
+                    <div class="search-input-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="arama-input" placeholder="Plaka, araç sahibi veya dosya no ile ara...">
+                        <button class="btn btn-primary" id="arama-btn">
+                            <i class="fas fa-search"></i> Ara
+                        </button>
                     </div>
                     
-                    <div class="form-grup">
-                        <label for="plaka"><i class="fas fa-car"></i> Araç Plakası *</label>
-                        <input type="text" id="plaka" required placeholder="34 ABC 123">
-                    </div>
-                </div>
-                
-                <div class="form-satiri">
-                    <div class="form-grup">
-                        <label for="arac-sahibi"><i class="fas fa-user"></i> Araç Sahibi *</label>
-                        <input type="text" id="arac-sahibi" required placeholder="Ad Soyad">
-                    </div>
-                    
-                    <div class="form-grup">
-                        <label for="telefon"><i class="fas fa-phone"></i> Telefon</label>
-                        <input type="tel" id="telefon" placeholder="05xx xxx xx xx">
-                    </div>
-                </div>
-                
-                <div class="form-satiri">
-                    <div class="form-grup">
-                        <label for="email"><i class="fas fa-envelope"></i> E-posta</label>
-                        <input type="email" id="email" placeholder="ornek@email.com">
-                    </div>
-                    
-                    <div class="form-grup">
-                        <label for="kaza-tarihi"><i class="fas fa-calendar"></i> Kaza Tarihi</label>
-                        <input type="date" id="kaza-tarihi">
-                    </div>
-                </div>
-                
-                <div class="form-satiri">
-                    <div class="form-grup genis">
-                        <label for="sigorta-sirketi"><i class="fas fa-shield-alt"></i> Sigorta Şirketi</label>
-                        <input type="text" id="sigorta-sirketi" placeholder="Sigorta şirketi adı">
-                    </div>
-                </div>
-                
-                <div class="form-satiri">
-                    <div class="form-grup genis">
-                        <label for="notlar"><i class="fas fa-sticky-note"></i> Notlar</label>
-                        <textarea id="notlar" rows="3" placeholder="Ek bilgiler..."></textarea>
-                    </div>
-                </div>
-                
-                <div class="form-aksiyonlar">
-                    <button type="reset" class="buton buton-ikincil">Temizle</button>
-                    <button type="submit" class="buton buton-ana">
-                        <i class="fas fa-save"></i> Kaydet
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Dosya Yükleme Modalı -->
-        <div id="dosya-yukle-modal" class="modal gizli">
-            <div class="modal-icerik">
-                <div class="modal-baslik">
-                    <h3><i class="fas fa-upload"></i> Dosya Yükle</h3>
-                    <button class="modal-kapat" id="modal-kapat">&times;</button>
-                </div>
-                
-                <form id="dosya-yukle-formu">
-                    <input type="hidden" id="modal-vaka-id">
-                    
-                    <div class="form-grup">
-                        <label for="belge-turu"><i class="fas fa-file"></i> Belge Türü</label>
-                        <select id="belge-turu" required>
-                            <option value="">Seçiniz</option>
-                            <option value="VEKALETNAME">Vekaletname</option>
-                            <option value="KAZA_TUTANAGI">Kaza Tespit Tutanağı</option>
-                            <option value="EXPERTIZ">Expertiz Raporu</option>
-                            <option value="SIGORTA">Sigorta Evrakı</option>
-                            <option value="TAHKIM">Tahkim Dilekçesi</option>
-                            <option value="DIGER">Diğer</option>
+                    <div class="filter-controls">
+                        <select id="durum-filtre" class="filter-select">
+                            <option value="">Tüm Durumlar</option>
+                            <option value="BEKLEMEDE">Bekleyen</option>
+                            <option value="SIGORTADA">Sigortada</option>
+                            <option value="TAHKIMDE">Tahkimde</option>
+                            <option value="ICRADA">İcrada</option>
+                            <option value="USTASI">Ustası</option>
+                            <option value="TAMAMLANDI">Biten</option>
+                        </select>
+                        
+                        <select id="sirala-filtre" class="filter-select">
+                            <option value="created_at DESC">En Yeni</option>
+                            <option value="created_at ASC">En Eski</option>
+                            <option value="plaka ASC">Plaka (A-Z)</option>
+                            <option value="arac_sahibi ASC">İsim (A-Z)</option>
+                        </select>
+                        
+                        <select id="sayfa-boyutu" class="filter-select">
+                            <option value="10">10 kayıt</option>
+                            <option value="25" selected>25 kayıt</option>
+                            <option value="50">50 kayıt</option>
+                            <option value="100">100 kayıt</option>
                         </select>
                     </div>
-                    
-                    <div class="dosya-alani" id="dosya-surukle-alani">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Dosyayı sürükleyip bırakın veya tıklayın</p>
-                        <input type="file" id="dosya-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt">
-                        <small>PDF, JPG, PNG, DOC (Max: 10MB)</small>
+                </div>
+            </section>
+
+            <!-- Vaka Listesi Tablosu -->
+            <section class="table-section">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Kayıt Tarihi</th>
+                                <th>Plaka</th>
+                                <th>Müvekkil ve TC</th>
+                                <th>Konu</th>
+                                <th>Ajans</th>
+                                <th>Ustası</th>
+                                <th>Kaza Tarihi</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vaka-tablo-body">
+                            <!-- Vakalar buraya yükleniyor -->
+                            <tr>
+                                <td colspan="8" class="loading-row">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Vakalar yükleniyor...</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Sayfalama -->
+                <div class="pagination">
+                    <div class="pagination-info" id="sayfa-bilgi">
+                        Toplam 0 kayıt - Sayfa 1/1
                     </div>
                     
-                    <div id="secili-dosya" class="gizli"></div>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn" id="ilk-sayfa" disabled>
+                            <i class="fas fa-angle-double-left"></i>
+                        </button>
+                        <button class="pagination-btn" id="onceki-sayfa" disabled>
+                            <i class="fas fa-angle-left"></i>
+                        </button>
+                        
+                        <div class="page-numbers" id="sayfa-numaralari">
+                            <!-- Sayfa numaraları buraya gelecek -->
+                        </div>
+                        
+                        <button class="pagination-btn" id="sonraki-sayfa" disabled>
+                            <i class="fas fa-angle-right"></i>
+                        </button>
+                        <button class="pagination-btn" id="son-sayfa" disabled>
+                            <i class="fas fa-angle-double-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Yeni Dosya Ekleme Butonu -->
+            <div class="fab-container">
+                <button class="fab-btn" id="yeni-dosya-btn" data-page="yeni-vaka">
+                    <i class="fas fa-plus"></i>
+                    <span>+ Dosya Aç</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- Vaka Detay Modal -->
+        <div id="vaka-detay-modal" class="modal gizli">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3><i class="fas fa-car"></i> Vaka Detayları</h3>
+                    <button class="modal-close" id="modal-kapat">&times;</button>
+                </div>
+                <div class="modal-body" id="vaka-detay-icerik">
+                    <!-- Vaka detayları buraya yüklenecek -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Vaka Düzenleme Modalı (YENİ EKLENDİ) -->
+        <div id="vaka-duzenle-modal" class="modal gizli">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-edit"></i> Vaka Düzenle</h3>
+                    <button class="modal-close" id="duzenle-modal-kapat">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="vaka-duzenle-formu">
+                        <input type="hidden" id="duzenle-vaka-id">
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="duzenle-dosya-no">
+                                    <i class="fas fa-file-alt"></i> Dosya Numarası *
+                                </label>
+                                <input type="text" id="duzenle-dosya-no" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="duzenle-plaka">
+                                    <i class="fas fa-car"></i> Araç Plakası *
+                                </label>
+                                <input type="text" id="duzenle-plaka" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="duzenle-arac-sahibi">
+                                    <i class="fas fa-user"></i> Araç Sahibi *
+                                </label>
+                                <input type="text" id="duzenle-arac-sahibi" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="duzenle-telefon">
+                                    <i class="fas fa-phone"></i> Telefon
+                                </label>
+                                <input type="tel" id="duzenle-telefon">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="duzenle-email">
+                                    <i class="fas fa-envelope"></i> E-posta
+                                </label>
+                                <input type="email" id="duzenle-email">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="duzenle-kaza-tarihi">
+                                    <i class="fas fa-calendar"></i> Kaza Tarihi
+                                </label>
+                                <input type="date" id="duzenle-kaza-tarihi">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="duzenle-sigorta-sirketi">
+                                    <i class="fas fa-shield-alt"></i> Sigorta Şirketi
+                                </label>
+                                <input type="text" id="duzenle-sigorta-sirketi">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="duzenle-durum">
+                                    <i class="fas fa-info-circle"></i> Durum
+                                </label>
+                                <select id="duzenle-durum">
+                                    <option value="BEKLEMEDE">Bekleyen</option>
+                                    <option value="SIGORTADA">Sigortada</option>
+                                    <option value="TAHKIMDE">Tahkimde</option>
+                                    <option value="ICRADA">İcrada</option>
+                                    <option value="USTASI">Ustası</option>
+                                    <option value="TAMAMLANDI">Tamamlandı</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="duzenle-notlar">
+                                    <i class="fas fa-sticky-note"></i> Notlar
+                                </label>
+                                <textarea id="duzenle-notlar" rows="3"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="duzenle-iptal">
+                                İptal
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yeni Vaka Formu Modal -->
+        <div id="yeni-vaka-modal" class="modal gizli">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-plus-circle"></i> Yeni Dosya Aç</h3>
+                    <button class="modal-close" id="yeni-vaka-iptal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="yeni-vaka-formu">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="dosya-no">
+                                    <i class="fas fa-file-alt"></i> Dosya Numarası *
+                                </label>
+                                <input type="text" id="dosya-no" required placeholder="Örn: 2023-THK-001">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="plaka">
+                                    <i class="fas fa-car"></i> Araç Plakası *
+                                </label>
+                                <input type="text" id="plaka" required placeholder="34 ABC 123">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="arac-sahibi">
+                                    <i class="fas fa-user"></i> Araç Sahibi *
+                                </label>
+                                <input type="text" id="arac-sahibi" required placeholder="Ad Soyad">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tc-kimlik">
+                                    <i class="fas fa-id-card"></i> TC Kimlik No
+                                </label>
+                                <input type="text" id="tc-kimlik" placeholder="TC Kimlik Numarası">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="telefon">
+                                    <i class="fas fa-phone"></i> Telefon
+                                </label>
+                                <input type="tel" id="telefon" placeholder="05xx xxx xx xx">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">
+                                    <i class="fas fa-envelope"></i> E-posta
+                                </label>
+                                <input type="email" id="email" placeholder="ornek@email.com">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="kaza-tarihi">
+                                    <i class="fas fa-calendar"></i> Kaza Tarihi
+                                </label>
+                                <input type="date" id="kaza-tarihi">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="sigorta-sirketi">
+                                    <i class="fas fa-shield-alt"></i> Sigorta Şirketi
+                                </label>
+                                <input type="text" id="sigorta-sirketi" placeholder="Sigorta şirketi adı">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="notlar">
+                                    <i class="fas fa-sticky-note"></i> Notlar
+                                </label>
+                                <textarea id="notlar" rows="3" placeholder="Ek bilgiler..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="form-iptal">
+                                İptal
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dosya Yükleme Modal -->
+        <div id="dosya-yukle-modal" class="modal gizli">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-upload"></i> Dosya Yükle</h3>
+                    <button class="modal-close" id="dosya-modal-kapat">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="dosya-yukle-formu">
+                        <input type="hidden" id="modal-vaka-id">
+                        
+                        <div class="form-group">
+                            <label for="belge-turu">
+                                <i class="fas fa-file"></i> Belge Türü *
+                            </label>
+                            <select id="belge-turu" required>
+                                <option value="">Seçiniz</option>
+                                <option value="VEKALETNAME">Vekaletname</option>
+                                <option value="KAZA_TUTANAGI">Kaza Tespit Tutanağı</option>
+                                <option value="EXPERTIZ">Expertiz Raporu</option>
+                                <option value="SIGORTA">Sigorta Evrakı</option>
+                                <option value="TAHKIM">Tahkim Dilekçesi</option>
+                                <option value="DIGER">Diğer</option>
+                            </select>
+                        </div>
+                        
+                        <div class="file-upload-area" id="dosya-surukle-alani">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="upload-text">
+                                <p>Dosyayı sürükleyip bırakın veya tıklayın</p>
+                                <p class="upload-hint">PDF, JPG, PNG, DOC (Max: 10MB)</p>
+                            </div>
+                            <input type="file" id="dosya-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt">
+                        </div>
+                        
+                        <div id="secili-dosya" class="gizli">
+                            <!-- Seçilen dosya bilgisi buraya gelecek -->
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="dosya-iptal">
+                                İptal
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Yükle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Kurulum Modal -->
+    <div id="admin-modal" class="modal gizli">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-shield"></i> İlk Kurulum</h3>
+            </div>
+            <div class="modal-body">
+                <p>Sistemi ilk kez kullanıyorsunuz. Lütfen bir admin kullanıcı oluşturun.</p>
+                
+                <form id="admin-formu">
+                    <div class="form-group">
+                        <label for="admin-adi">Kullanıcı Adı *</label>
+                        <input type="text" id="admin-adi" required>
+                    </div>
                     
-                    <div class="modal-aksiyonlar">
-                        <button type="button" class="buton buton-ikincil" id="dosya-iptal">İptal</button>
-                        <button type="submit" class="buton buton-ana">
-                            <i class="fas fa-upload"></i> Yükle
+                    <div class="form-group">
+                        <label for="admin-sifre">Şifre *</label>
+                        <input type="password" id="admin-sifre" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admin-isim">Ad Soyad *</label>
+                        <input type="text" id="admin-isim" required>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Admin Oluştur
                         </button>
                     </div>
                 </form>
@@ -274,38 +575,45 @@
         </div>
     </div>
 
-    <!-- Admin Kurulum Modalı -->
-    <div id="admin-modal" class="modal">
-        <div class="modal-icerik">
-            <div class="modal-baslik">
-                <h3><i class="fas fa-user-shield"></i> Admin Kurulumu</h3>
-            </div>
-            
-            <p>Sistemi ilk kez kullanıyorsunuz. Bir admin kullanıcı oluşturun.</p>
-            
-            <form id="admin-formu">
-                <div class="form-grup">
-                    <label for="admin-adi">Kullanıcı Adı</label>
-                    <input type="text" id="admin-adi" required>
-                </div>
-                
-                <div class="form-grup">
-                    <label for="admin-sifre">Şifre</label>
-                    <input type="password" id="admin-sifre" required>
-                </div>
-                
-                <div class="form-grup">
-                    <label for="admin-isim">Ad Soyad</label>
-                    <input type="text" id="admin-isim" required>
-                </div>
-                
-                <button type="submit" class="buton buton-ana">
-                    <i class="fas fa-user-plus"></i> Admin Oluştur
-                </button>
-            </form>
-        </div>
-    </div>
-
+    <!-- JavaScript dosyaları -->
     <script src="js/app.js"></script>
+    
+    <!-- Admin form fix script -->
+    <script>
+    // Admin form fix - KESİN ÇALIŞAN
+    document.addEventListener('DOMContentLoaded', function() {
+        const adminForm = document.getElementById('admin-formu');
+        const adminModal = document.getElementById('admin-modal');
+        
+        if (adminForm && adminModal) {
+            adminForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('admin-adi').value;
+                const password = document.getElementById('admin-sifre').value;
+                const fullname = document.getElementById('admin-isim').value;
+                
+                try {
+                    const response = await fetch('/api/create-admin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, fullname })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Admin oluşturuldu! Yenileniyor...');
+                        location.reload(); // Basit ve etkili
+                    } else {
+                        alert('Hata: ' + result.error);
+                    }
+                } catch (error) {
+                    alert('Hata: ' + error.message);
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>

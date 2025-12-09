@@ -415,3 +415,53 @@ app.listen(PORT, () => {
     console.log(`🚀 Sunucu http://localhost:${PORT} adresinde çalışıyor`);
     console.log(`🌐 Site: ${process.env.SITE_URL || `http://localhost:${PORT}`}`);
 });
+
+// Vaka güncelleme endpoint'i (PUT /api/vaka/:id)
+app.put('/api/vaka/:id', authRequired, (req, res) => {
+    const vakaId = req.params.id;
+    const {
+        dosya_no,
+        plaka,
+        arac_sahibi,
+        telefon,
+        email,
+        kaza_tarihi,
+        sigorta_sirketi,
+        durum,
+        notlar
+    } = req.body;
+    
+    console.log(`🔄 Vaka güncelleniyor: ${vakaId}`);
+    
+    // Sadece bu kullanıcının vakasını güncelle
+    db.run(`UPDATE cases SET 
+            dosya_no = ?, 
+            plaka = ?, 
+            arac_sahibi = ?, 
+            telefon = ?, 
+            email = ?, 
+            kaza_tarihi = ?, 
+            sigorta_sirketi = ?, 
+            durum = ?, 
+            notlar = ?
+            WHERE id = ? AND created_by = ?`,
+        [
+            dosya_no, plaka, arac_sahibi, telefon, email, 
+            kaza_tarihi, sigorta_sirketi, durum, notlar,
+            vakaId, req.session.userId
+        ],
+        function(err) {
+            if (err) {
+                console.error('❌ Vaka güncelleme hatası:', err.message);
+                return res.status(500).json({ error: err.message });
+            }
+            
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'Vaka bulunamadı veya yetkiniz yok' });
+            }
+            
+            console.log(`✅ Vaka güncellendi: ${vakaId}`);
+            res.json({ success: true, message: 'Vaka başarıyla güncellendi' });
+        }
+    );
+});

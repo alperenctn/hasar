@@ -1,17 +1,17 @@
 'use strict';
 
-// Uygulama durumu
-const durum = {
-    kullanici: null,
-    aktifVaka: null,
-    vakalar: [],
-    istatistikler: {},
-    aramaKelime: '',
-    aktifDurum: ''
-};
+console.log('🚀 app.js yüklendi');
+
+// Temel değişkenler
+let currentUser = null;
+let vakalar = [];
+let currentPage = 1;
+let pageSize = 25;
+let totalRecords = 0;
+let totalPages = 1;
 
 // DOM Elementleri
-const elemanlar = {
+const elements = {
     // Sayfalar
     girisSayfasi: document.getElementById('giris-sayfasi'),
     anaSayfa: document.getElementById('ana-sayfa'),
@@ -21,16 +21,13 @@ const elemanlar = {
     kullaniciAdi: document.getElementById('kullanici-adi'),
     sifre: document.getElementById('sifre'),
     
-    // Ana Sayfa
-    hosgeldinMesaji: document.getElementById('hosgeldin-mesaji'),
-    cikisButon: document.getElementById('cikis-buton'),
-    
-    // Menü
-    menuButonlar: document.querySelectorAll('.menu-buton'),
+    // Header
+    kullaniciIsim: document.getElementById('kullanici-isim'),
+    cikisBtn: document.getElementById('cikis-btn'),
     
     // İstatistikler
     toplamVaka: document.getElementById('toplam-vaka'),
-    beklemedeVaka: document.getElementById('beklemede-vaka'),
+    bekleyenVaka: document.getElementById('bekleyen-vaka'),
     sigortadaVaka: document.getElementById('sigortada-vaka'),
     tahkimdeVaka: document.getElementById('tahkimde-vaka'),
     icradaVaka: document.getElementById('icrada-vaka'),
@@ -39,794 +36,468 @@ const elemanlar = {
     
     // Arama
     aramaInput: document.getElementById('arama-input'),
-    aramaButon: document.getElementById('arama-buton'),
-    durumFiltreler: document.querySelectorAll('.durum-filtre'),
+    aramaBtn: document.getElementById('arama-btn'),
     
-    // Liste
-    vakaListesi: document.getElementById('vaka-listesi'),
+    // Tablo
+    vakaTabloBody: document.getElementById('vaka-tablo-body'),
     
-    // Detay
-    vakaDetay: document.getElementById('vaka-detay'),
-    vakaDetayIcerik: document.getElementById('vaka-detay-icerik'),
-    geriButon: document.getElementById('geri-buton'),
+    // Sayfalama
+    sayfaBilgi: document.getElementById('sayfa-bilgi'),
+    ilkSayfa: document.getElementById('ilk-sayfa'),
+    oncekiSayfa: document.getElementById('onceki-sayfa'),
+    sonrakiSayfa: document.getElementById('sonraki-sayfa'),
+    sonSayfa: document.getElementById('son-sayfa'),
+    sayfaNumaralari: document.getElementById('sayfa-numaralari'),
     
-    // Yeni Vaka
-    yeniVakaSayfa: document.getElementById('yeni-vaka'),
-    yeniVakaFormu: document.getElementById('yeni-vaka-formu'),
-    iptalButon: document.getElementById('iptal-buton'),
-    
-    // Modal
-    dosyaYukleModal: document.getElementById('dosya-yukle-modal'),
-    modalKapat: document.getElementById('modal-kapat'),
-    dosyaYukleFormu: document.getElementById('dosya-yukle-formu'),
-    dosyaInput: document.getElementById('dosya-input'),
-    dosyaSurukleAlani: document.getElementById('dosya-surukle-alani'),
-    seciliDosya: document.getElementById('secili-dosya'),
-    dosyaIptal: document.getElementById('dosya-iptal'),
-    
-    // Admin
-    adminModal: document.getElementById('admin-modal'),
-    adminFormu: document.getElementById('admin-formu')
+    // Butonlar
+    yeniDosyaBtn: document.getElementById('yeni-dosya-btn')
 };
 
-// API Fonksiyonları
-const api = {
-    async istek(yol, ayarlar = {}) {
-        const varsayilanAyarlar = {
+// API fonksiyonları
+async function apiRequest(endpoint, options = {}) {
+    try {
+        const response = await fetch(`/api${endpoint}`, {
             headers: {
                 'Content-Type': 'application/json',
             },
-            credentials: 'include'
-        };
-
-        try {
-            const cevap = await fetch(`/api${yol}`, {
-                ...varsayilanAyarlar,
-                ...ayarlar
-            });
-
-            if (!cevap.ok) {
-                const hata = await cevap.json();
-                throw new Error(hata.error || `HTTP ${cevap.status}`);
-            }
-
-            return await cevap.json();
-        } catch (hata) {
-            console.error('API Hatası:', hata);
-            throw hata;
-        }
-    },
-
-    async giris(kullaniciAdi, sifre) {
-        return this.istek('/login', {
-            method: 'POST',
-            body: JSON.stringify({ username: kullaniciAdi, password: sifre })
+            credentials: 'include',
+            ...options
         });
-    },
-
-    async cikis() {
-        return this.istek('/logout', { method: 'POST' });
-    },
-
-    async sessionKontrol() {
-        return this.istek('/session');
-    },
-
-    async adminKontrol() {
-        return this.istek('/admin-check');
-    },
-
-    async adminOlustur(kullaniciAdi, sifre, isim) {
-        return this.istek('/create-admin', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                username: kullaniciAdi, 
-                password: sifre, 
-                fullname: isim 
-            })
-        });
-    },
-
-    async istatistikleriGetir() {
-        return this.istek('/istatistikler');
-    },
-
-    async vakalariGetir(arama = '', durum = '') {
-        let yol = `/vakalar`;
-        const parametreler = [];
         
-        if (arama) parametreler.push(`arama=${encodeURIComponent(arama)}`);
-        if (durum) parametreler.push(`durum=${encodeURIComponent(durum)}`);
-        
-        if (parametreler.length > 0) {
-            yol += `?${parametreler.join('&')}`;
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || `HTTP ${response.status}`);
         }
         
-        return this.istek(yol);
-    },
-
-    async vakaEkle(vakaData) {
-        return this.istek('/vaka-ekle', {
-            method: 'POST',
-            body: JSON.stringify(vakaData)
-        });
-    },
-
-    async vakaDetayGetir(id) {
-        return this.istek(`/vaka/${id}`);
-    },
-
-    async vakaGuncelle(id, guncelleme) {
-        return this.istek(`/vaka/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(guncelleme)
-        });
-    },
-
-    async dosyaYukle(vakaId, dosya, belgeTuru) {
-        const formData = new FormData();
-        formData.append('dosya', dosya);
-        formData.append('belge_turu', belgeTuru);
-
-        const cevap = await fetch(`/api/dosya-yukle/${vakaId}`, {
-            method: 'POST',
-            body: formData,
-            credentials: 'include'
-        });
-
-        if (!cevap.ok) {
-            const hata = await cevap.json();
-            throw new Error(hata.error);
-        }
-
-        return cevap.json();
-    },
-
-    async dosyaSil(id) {
-        return this.istek(`/dosya-sil/${id}`, { method: 'DELETE' });
+        return await response.json();
+    } catch (error) {
+        console.error('API Hatası:', error);
+        throw error;
     }
-};
+}
 
-// Yardımcı Fonksiyonlar
-const yardimci = {
-    formatTarih(tarihString) {
-        if (!tarihString) return '';
-        const tarih = new Date(tarihString);
-        return tarih.toLocaleDateString('tr-TR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    },
-
-    formatPlaka(plaka) {
-        if (!plaka) return '';
-        return plaka.toUpperCase().replace(/(\d{2})([A-Z]{1,3})(\d{2,4})/, '$1 $2 $3');
-    },
-
-    durumRenk(durum) {
-        const renkler = {
-            'BEKLEMEDE': 'durum-beklemede',
-            'SIGORTADA': 'durum-sigortada',
-            'TAHKIMDE': 'durum-tahkimde',
-            'ICRADA': 'durum-icrada',
-            'USTASI': 'durum-ustasi',
-            'TAMAMLANDI': 'durum-tamamlandi'
-        };
-        return renkler[durum] || 'durum-beklemede';
-    },
-
-    durumMetin(durum) {
-        const metinler = {
-            'BEKLEMEDE': 'Bekleyen',
-            'SIGORTADA': 'Sigortada',
-            'TAHKIMDE': 'Tahkimde',
-            'ICRADA': 'İcrada',
-            'USTASI': 'Ustası',
-            'TAMAMLANDI': 'Tamamlandı'
-        };
-        return metinler[durum] || durum;
-    },
-
-    dosyaIkon(dosyaAdi) {
-        if (dosyaAdi.endsWith('.pdf')) return 'file-pdf';
-        if (dosyaAdi.endsWith('.doc') || dosyaAdi.endsWith('.docx')) return 'file-word';
-        if (dosyaAdi.endsWith('.jpg') || dosyaAdi.endsWith('.jpeg') || dosyaAdi.endsWith('.png')) return 'file-image';
-        return 'file';
-    }
-};
-
-// Uygulama Fonksiyonları
-const uygulama = {
-    // Başlangıç
-    async baslat() {
-        this.eventleriBagla();
-        await this.sessionKontrol();
-        await this.adminKontrol();
-    },
-
-    // Event bağlama
-    eventleriBagla() {
-        // Giriş
-        elemanlar.girisFormu.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.girisYap();
-        });
-
-        // Çıkış
-        elemanlar.cikisButon.addEventListener('click', () => {
-            this.cikisYap();
-        });
-
-        // Menü butonları
-        elemanlar.menuButonlar.forEach(buton => {
-            buton.addEventListener('click', (e) => {
-                this.sayfaDegistir(e.currentTarget.dataset.sayfa);
-            });
-        });
-
-        // Arama
-        elemanlar.aramaButon.addEventListener('click', () => {
-            this.vakalariListele();
-        });
-
-        elemanlar.aramaInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.vakalariListele();
-        });
-
-        // Durum filtreleri
-        elemanlar.durumFiltreler.forEach(filtre => {
-            filtre.addEventListener('click', (e) => {
-                this.durumFiltrele(e.currentTarget.dataset.durum);
-            });
-        });
-
-        // Geri butonu
-        elemanlar.geriButon.addEventListener('click', () => {
-            this.anaSayfayaDon();
-        });
-
-        // İptal butonu
-        elemanlar.iptalButon.addEventListener('click', () => {
-            this.anaSayfayaDon();
-        });
-
-        // Yeni vaka formu
-        elemanlar.yeniVakaFormu.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.yeniVakaEkle();
-        });
-
-        // Modal
-        elemanlar.modalKapat.addEventListener('click', () => {
-            this.modalGizle();
-        });
-
-        elemanlar.dosyaIptal.addEventListener('click', () => {
-            this.modalGizle();
-        });
-
-        // Dosya yükleme formu
-        elemanlar.dosyaYukleFormu.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.dosyaYukle();
-        });
-
-        // Dosya seçimi
-        elemanlar.dosyaInput.addEventListener('change', (e) => {
-            this.dosyaSecildi(e.target.files[0]);
-        });
-
-        // Sürükle bırak
-        elemanlar.dosyaSurukleAlani.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            elemanlar.dosyaSurukleAlani.style.borderColor = '#3498db';
-            elemanlar.dosyaSurukleAlani.style.background = '#f8f9fa';
-        });
-
-        elemanlar.dosyaSurukleAlani.addEventListener('dragleave', () => {
-            elemanlar.dosyaSurukleAlani.style.borderColor = '#ddd';
-            elemanlar.dosyaSurukleAlani.style.background = 'white';
-        });
-
-        elemanlar.dosyaSurukleAlani.addEventListener('drop', (e) => {
-            e.preventDefault();
-            elemanlar.dosyaSurukleAlani.style.borderColor = '#ddd';
-            elemanlar.dosyaSurukleAlani.style.background = 'white';
-            
-            if (e.dataTransfer.files.length > 0) {
-                this.dosyaSecildi(e.dataTransfer.files[0]);
-                elemanlar.dosyaInput.files = e.dataTransfer.files;
-            }
-        });
-
-        elemanlar.dosyaSurukleAlani.addEventListener('click', () => {
-            elemanlar.dosyaInput.click();
-        });
-
-        // Admin formu
-        elemanlar.adminFormu.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.adminOlustur();
-        });
-    },
-
-    // Session kontrolü
-    async sessionKontrol() {
-        try {
-            const session = await api.sessionKontrol();
-            
-            if (session.authenticated) {
-                durum.kullanici = session.user;
-                this.anaSayfaGoster();
-                await this.istatistikleriYukle();
-                await this.vakalariListele();
-            } else {
-                this.girisSayfasiGoster();
-            }
-        } catch (hata) {
-            console.error('Session kontrol hatası:', hata);
-            this.girisSayfasiGoster();
-        }
-    },
-
-    // Admin kontrolü
-    async adminKontrol() {
-        try {
-            const kontrol = await api.adminKontrol();
-            
-            if (!kontrol.adminExists) {
-                elemanlar.adminModal.classList.remove('gizli');
-            } else {
-                elemanlar.adminModal.classList.add('gizli');
-            }
-        } catch (hata) {
-            console.error('Admin kontrol hatası:', hata);
-        }
-    },
-
-    // Giriş yap
-    async girisYap() {
-        const kullaniciAdi = elemanlar.kullaniciAdi.value;
-        const sifre = elemanlar.sifre.value;
-
-        try {
-            const sonuc = await api.giris(kullaniciAdi, sifre);
-            
-            if (sonuc.success) {
-                durum.kullanici = sonuc.user;
-                this.anaSayfaGoster();
-                await this.istatistikleriYukle();
-                await this.vakalariListele();
-            } else {
-                alert('Giriş başarısız: ' + sonuc.error);
-            }
-        } catch (hata) {
-            alert('Giriş hatası: ' + hata.message);
-        }
-    },
-
-    // Çıkış yap
-    async cikisYap() {
-        try {
-            await api.cikis();
-            durum.kullanici = null;
-            this.girisSayfasiGoster();
-        } catch (hata) {
-            console.error('Çıkış hatası:', hata);
-        }
-    },
-
-    // Admin oluştur
-    async adminOlustur() {
-        const kullaniciAdi = document.getElementById('admin-adi').value;
-        const sifre = document.getElementById('admin-sifre').value;
-        const isim = document.getElementById('admin-isim').value;
-
-        try {
-            await api.adminOlustur(kullaniciAdi, sifre, isim);
-            elemanlar.adminModal.classList.add('gizli');
-            alert('Admin kullanıcı başarıyla oluşturuldu!');
-        } catch (hata) {
-            alert('Admin oluşturma hatası: ' + hata.message);
-        }
-    },
-
-    // Sayfa gösterme
-    girisSayfasiGoster() {
-        elemanlar.girisSayfasi.classList.remove('gizli');
-        elemanlar.anaSayfa.classList.add('gizli');
-    },
-
-    anaSayfaGoster() {
-        elemanlar.girisSayfasi.classList.add('gizli');
-        elemanlar.anaSayfa.classList.remove('gizli');
+// Session kontrolü
+async function checkSession() {
+    try {
+        const session = await apiRequest('/session');
         
-        // Hoş geldin mesajı
-        if (durum.kullanici) {
-            elemanlar.hosgeldinMesaji.innerHTML = `
-                <i class="fas fa-user-circle"></i>
-                <span>Hoş geldiniz, ${durum.kullanici.fullname}</span>
-            `;
-        }
-    },
-
-    sayfaDegistir(sayfaAdi) {
-        // Menü butonlarını güncelle
-        elemanlar.menuButonlar.forEach(buton => {
-            buton.classList.remove('aktif');
-        });
-        
-        const aktifButon = document.querySelector(`[data-sayfa="${sayfaAdi}"]`);
-        if (aktifButon) {
-            aktifButon.classList.add('aktif');
-        }
-        
-        // Sayfaları gizle
-        document.querySelectorAll('.icerik-sayfa').forEach(sayfa => {
-            sayfa.classList.add('gizli');
-        });
-        
-        // İstenen sayfayı göster
-        document.getElementById(sayfaAdi)?.classList.remove('gizli');
-        
-        // Dashboard'da istatistikleri yenile
-        if (sayfaAdi === 'dashboard') {
-            this.istatistikleriYukle();
-        }
-    },
-
-    anaSayfayaDon() {
-        this.sayfaDegistir('dashboard');
-        this.vakalariListele();
-    },
-
-    // İstatistikler
-    async istatistikleriYukle() {
-        try {
-            const istatistikler = await api.istatistikleriGetir();
-            durum.istatistikler = istatistikler;
-            this.istatistikleriGoster();
-        } catch (hata) {
-            console.error('İstatistik yükleme hatası:', hata);
-        }
-    },
-
-    istatistikleriGoster() {
-        const ist = durum.istatistikler;
-        
-        elemanlar.toplamVaka.textContent = ist.toplam || '0';
-        elemanlar.beklemedeVaka.textContent = ist.beklemede || '0';
-        elemanlar.sigortadaVaka.textContent = ist.devam || '0'; // Örnek eşleme
-        elemanlar.tahkimdeVaka.textContent = '0'; // Bu alanı veritabanına eklemelisiniz
-        elemanlar.icradaVaka.textContent = '0'; // Bu alanı veritabanına eklemelisiniz
-        elemanlar.ustasiVaka.textContent = '0'; // Bu alanı veritabanına eklemelisiniz
-        elemanlar.bittiVaka.textContent = ist.tamam || '0';
-    },
-
-    // Vaka listeleme
-    async vakalariListele() {
-        try {
-            elemanlar.vakaListesi.innerHTML = `
-                <div class="yukleniyor">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Vakalar yükleniyor...</p>
-                </div>
-            `;
-            
-            const vakalar = await api.vakalariGetir(durum.aramaKelime, durum.aktifDurum);
-            durum.vakalar = vakalar;
-            this.vakalariGoster();
-        } catch (hata) {
-            console.error('Vaka listeleme hatası:', hata);
-            elemanlar.vakaListesi.innerHTML = `
-                <div class="yukleniyor">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Vakalar yüklenirken hata oluştu</p>
-                </div>
-            `;
-        }
-    },
-
-    vakalariGoster() {
-        if (durum.vakalar.length === 0) {
-            elemanlar.vakaListesi.innerHTML = `
-                <div class="yukleniyor">
-                    <i class="fas fa-folder-open"></i>
-                    <p>Henüz vaka bulunmuyor</p>
-                    <p><small>Yeni vaka eklemek için "Evrak Yükle" butonuna tıklayın</small></p>
-                </div>
-            `;
-            return;
-        }
-        
-        let html = '';
-        
-        durum.vakalar.forEach(vaka => {
-            html += `
-                <div class="vaka-karti" data-id="${vaka.id}">
-                    <div class="vaka-baslik">
-                        <span class="plaka-etiket">${yardimci.formatPlaka(vaka.plaka)}</span>
-                        <span class="vaka-tarih">${yardimci.formatTarih(vaka.created_at)}</span>
-                    </div>
-                    
-                    <div class="vaka-icerik">
-                        <h4>${vaka.arac_sahibi}</h4>
-                        <p class="vaka-bilgi"><strong>Dosya No:</strong> ${vaka.dosya_no}</p>
-                        <p class="vaka-bilgi"><strong>Sigorta:</strong> ${vaka.sigorta_sirketi || 'Belirtilmemiş'}</p>
-                        ${vaka.kaza_tarihi ? 
-                            `<p class="vaka-bilgi"><strong>Kaza Tarihi:</strong> ${yardimci.formatTarih(vaka.kaza_tarihi)}</p>` : 
-                            ''
-                        }
-                    </div>
-                    
-                    <div class="vaka-alt">
-                        <span class="vaka-durum ${yardimci.durumRenk(vaka.durum)}">
-                            ${yardimci.durumMetin(vaka.durum)}
-                        </span>
-                        
-                        <div class="vaka-aksiyonlar">
-                            <button class="aksiyon-buton" onclick="uygulama.vakaDetayGoster(${vaka.id})" title="Detaylar">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="aksiyon-buton" onclick="uygulama.dosyaYukleModalGoster(${vaka.id})" title="Dosya Yükle">
-                                <i class="fas fa-upload"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        elemanlar.vakaListesi.innerHTML = html;
-    },
-
-    // Arama ve filtreleme
-    durumFiltrele(yeniDurum) {
-        // Filtre butonlarını güncelle
-        elemanlar.durumFiltreler.forEach(filtre => {
-            filtre.classList.remove('aktif');
-        });
-        
-        const aktifFiltre = document.querySelector(`[data-durum="${yeniDurum}"]`);
-        if (aktifFiltre) {
-            aktifFiltre.classList.add('aktif');
-        }
-        
-        // Durumu güncelle ve listele
-        durum.aktifDurum = yeniDurum;
-        this.vakalariListele();
-    },
-
-    // Yeni vaka ekleme
-    async yeniVakaEkle() {
-        const vakaData = {
-            dosya_no: document.getElementById('dosya-no').value,
-            plaka: document.getElementById('plaka').value,
-            arac_sahibi: document.getElementById('arac-sahibi').value,
-            telefon: document.getElementById('telefon').value,
-            email: document.getElementById('email').value,
-            kaza_tarihi: document.getElementById('kaza-tarihi').value,
-            sigorta_sirketi: document.getElementById('sigorta-sirketi').value,
-            notlar: document.getElementById('notlar').value
-        };
-        
-        try {
-            await api.vakaEkle(vakaData);
-            alert('✅ Vaka başarıyla eklendi!');
-            
-            // Formu temizle
-            elemanlar.yeniVakaFormu.reset();
-            
-            // Ana sayfaya dön
-            this.anaSayfayaDon();
-            
-            // İstatistikleri ve listeyi yenile
-            await this.istatistikleriYukle();
-            await this.vakalariListele();
-        } catch (hata) {
-            alert('❌ Vaka ekleme hatası: ' + hata.message);
-        }
-    },
-
-    // Vaka detayı
-    async vakaDetayGoster(id) {
-        try {
-            const vaka = await api.vakaDetayGetir(id);
-            durum.aktifVaka = vaka;
-            this.vakaDetayGosterEkran(vaka);
-        } catch (hata) {
-            console.error('Vaka detay hatası:', hata);
-            alert('Vaka detayı yüklenemedi: ' + hata.message);
-        }
-    },
-
-    vakaDetayGosterEkran(vaka) {
-        // Dashboard'ı gizle, detayı göster
-        document.getElementById('dashboard').classList.add('gizli');
-        elemanlar.vakaDetay.classList.remove('gizli');
-        
-        let belgelerHtml = '';
-        
-        if (vaka.belgeler && vaka.belgeler.length > 0) {
-            belgelerHtml = `
-                <div class="belgeler-bolum">
-                    <h3><i class="fas fa-folder"></i> Yüklenen Belgeler</h3>
-                    <div class="dosya-listesi">
-                        ${vaka.belgeler.map(belge => `
-                            <div class="dosya-oge">
-                                <div class="dosya-ikon">
-                                    <i class="fas fa-${yardimci.dosyaIkon(belge.dosya_adi)}"></i>
-                                </div>
-                                <div class="dosya-bilgi">
-                                    <div class="dosya-adi">${belge.orijinal_adi}</div>
-                                    <div class="dosya-turu">
-                                        ${belge.belge_turu} • ${yardimci.formatTarih(belge.yukleme_tarihi)}
-                                    </div>
-                                </div>
-                                <button class="aksiyon-buton" onclick="uygulama.dosyaIndir('${belge.dosya_adi}')" title="İndir">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                                <button class="aksiyon-buton" onclick="uygulama.dosyaSil(${belge.id})" title="Sil">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+        if (session.authenticated) {
+            currentUser = session.user;
+            showMainPage();
+            loadDashboard();
+            loadCases();
         } else {
-            belgelerHtml = `
-                <div class="belgeler-bolum">
-                    <h3><i class="fas fa-folder"></i> Yüklenen Belgeler</h3>
-                    <p>Henüz belge yüklenmemiş</p>
-                </div>
-            `;
+            showLoginPage();
         }
-        
-        elemanlar.vakaDetayIcerik.innerHTML = `
-            <div class="detay-baslik">
-                <h2><i class="fas fa-car"></i> ${vaka.plaka} - ${vaka.arac_sahibi}</h2>
-                <span class="vaka-durum ${yardimci.durumRenk(vaka.durum)}">
-                    ${yardimci.durumMetin(vaka.durum)}
-                </span>
-            </div>
-            
-            <div class="detay-grid">
-                <div class="detay-kutu">
-                    <h4><i class="fas fa-info-circle"></i> Temel Bilgiler</h4>
-                    <div class="detay-ozellik">
-                        <strong>Dosya No:</strong> ${vaka.dosya_no}
-                    </div>
-                    <div class="detay-ozellik">
-                        <strong>Plaka:</strong> ${vaka.plaka}
-                    </div>
-                    <div class="detay-ozellik">
-                        <strong>Telefon:</strong> ${vaka.telefon || 'Belirtilmemiş'}
-                    </div>
-                    <div class="detay-ozellik">
-                        <strong>E-posta:</strong> ${vaka.email || 'Belirtilmemiş'}
-                    </div>
-                    <div class="detay-ozellik">
-                        <strong>Kaza Tarihi:</strong> ${vaka.kaza_tarihi ? yardimci.formatTarih(vaka.kaza_tarihi) : 'Belirtilmemiş'}
-                    </div>
-                </div>
-                
-                <div class="detay-kutu">
-                    <h4><i class="fas fa-shield-alt"></i> Sigorta Bilgileri</h4>
-                    <div class="detay-ozellik">
-                        <strong>Şirket:</strong> ${vaka.sigorta_sirketi || 'Belirtilmemiş'}
-                    </div>
-                    <div class="detay-ozellik">
-                        <strong>Oluşturulma:</strong> ${yardimci.formatTarih(vaka.created_at)}
-                    </div>
-                    <div class="detay-ozellik">
-                        <strong>Oluşturan:</strong> ${vaka.olusturan || 'Belirtilmemiş'}
-                    </div>
-                </div>
-            </div>
-            
-            ${vaka.notlar ? `
-                <div class="detay-kutu">
-                    <h4><i class="fas fa-sticky-note"></i> Notlar</h4>
-                    <p>${vaka.notlar}</p>
-                </div>
-            ` : ''}
-            
-            ${belgelerHtml}
-            
-            <div class="form-aksiyonlar">
-                <button class="buton buton-ana" onclick="uygulama.dosyaYukleModalGoster(${vaka.id})">
-                    <i class="fas fa-upload"></i> Yeni Dosya Yükle
-                </button>
-            </div>
-        `;
-    },
-
-    // Dosya yükleme modalı
-    dosyaYukleModalGoster(vakaId) {
-        elemanlar.dosyaYukleModal.classList.remove('gizli');
-        document.getElementById('modal-vaka-id').value = vakaId;
-        
-        // Formu temizle
-        elemanlar.dosyaYukleFormu.reset();
-        elemanlar.seciliDosya.classList.add('gizli');
-        elemanlar.seciliDosya.innerHTML = '';
-    },
-
-    modalGizle() {
-        elemanlar.dosyaYukleModal.classList.add('gizli');
-    },
-
-    dosyaSecildi(dosya) {
-        if (dosya) {
-            elemanlar.seciliDosya.classList.remove('gizli');
-            elemanlar.seciliDosya.innerHTML = `
-                <div style="padding: 10px; background: #e9ecef; border-radius: var(--kenar-yuvarlak);">
-                    <i class="fas fa-file"></i> ${dosya.name} (${(dosya.size / 1024 / 1024).toFixed(2)} MB)
-                </div>
-            `;
-        }
-    },
-
-    async dosyaYukle() {
-        const vakaId = document.getElementById('modal-vaka-id').value;
-        const belgeTuru = document.getElementById('belge-turu').value;
-        const dosya = elemanlar.dosyaInput.files[0];
-        
-        if (!dosya) {
-            alert('Lütfen bir dosya seçin');
-            return;
-        }
-        
-        if (!belgeTuru) {
-            alert('Lütfen belge türünü seçin');
-            return;
-        }
-        
-        try {
-            await api.dosyaYukle(vakaId, dosya, belgeTuru);
-            alert('✅ Dosya başarıyla yüklendi!');
-            
-            // Modalı kapat
-            this.modalGizle();
-            
-            // Vaka detayını yenile
-            if (durum.aktifVaka && durum.aktifVaka.id == vakaId) {
-                await this.vakaDetayGoster(vakaId);
-            }
-        } catch (hata) {
-            alert('❌ Dosya yükleme hatası: ' + hata.message);
-        }
-    },
-
-    dosyaIndir(dosyaAdi) {
-        window.open(`/uploads/${dosyaAdi}`, '_blank');
-    },
-
-    async dosyaSil(dosyaId) {
-        if (!confirm('Bu dosyayı silmek istediğinize emin misiniz?')) {
-            return;
-        }
-        
-        try {
-            await api.dosyaSil(dosyaId);
-            alert('✅ Dosya başarıyla silindi!');
-            
-            // Vaka detayını yenile
-            if (durum.aktifVaka) {
-                await this.vakaDetayGoster(durum.aktifVaka.id);
-            }
-        } catch (hata) {
-            alert('❌ Dosya silme hatası: ' + hata.message);
-        }
+    } catch (error) {
+        console.error('Session kontrol hatası:', error);
+        showLoginPage();
     }
-};
+}
 
-// Global fonksiyonlar
-window.uygulama = uygulama;
+// Giriş yap
+async function login() {
+    const username = elements.kullaniciAdi.value;
+    const password = elements.sifre.value;
+
+    try {
+        const result = await apiRequest('/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+        
+        if (result.success) {
+            currentUser = result.user;
+            showMainPage();
+            loadDashboard();
+            loadCases();
+        } else {
+            alert('Giriş başarısız: ' + result.error);
+        }
+    } catch (error) {
+        alert('Giriş hatası: ' + error.message);
+    }
+}
+
+// Çıkış yap
+async function logout() {
+    try {
+        await apiRequest('/logout', { method: 'POST' });
+        currentUser = null;
+        showLoginPage();
+    } catch (error) {
+        console.error('Çıkış hatası:', error);
+    }
+}
+
+// Dashboard yükle
+async function loadDashboard() {
+    try {
+        const stats = await apiRequest('/istatistikler');
+        
+        if (elements.toplamVaka) elements.toplamVaka.textContent = stats.total || '0';
+        if (elements.bekleyenVaka) elements.bekleyenVaka.textContent = stats.pending || '0';
+        if (elements.sigortadaVaka) elements.sigortadaVaka.textContent = stats.inProgress || '0';
+        if (elements.bittiVaka) elements.bittiVaka.textContent = stats.completed || '0';
+        
+        // Diğer istatistikler
+        if (elements.tahkimdeVaka) elements.tahkimdeVaka.textContent = '0';
+        if (elements.icradaVaka) elements.icradaVaka.textContent = '0';
+        if (elements.ustasiVaka) elements.ustasiVaka.textContent = '0';
+        
+    } catch (error) {
+        console.error('Dashboard yükleme hatası:', error);
+    }
+}
+
+// Vakaları yükle
+async function loadCases(search = '', page = 1) {
+    try {
+        elements.vakaTabloBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="loading-row">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Vakalar yükleniyor...</span>
+                </td>
+            </tr>
+        `;
+        
+        const result = await apiRequest(`/vakalar?arama=${encodeURIComponent(search)}&sayfa=${page}&sayfaBoyutu=${pageSize}`);
+        
+        vakalar = result.vakalar || [];
+        totalRecords = result.toplamKayit || 0;
+        totalPages = result.toplamSayfa || 1;
+        currentPage = page;
+        
+        renderCases();
+        updatePagination();
+        
+    } catch (error) {
+        console.error('Vaka yükleme hatası:', error);
+        elements.vakaTabloBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="loading-row">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Vakalar yüklenirken hata oluştu</span>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Vakaları tabloda göster
+function renderCases() {
+    if (!elements.vakaTabloBody) return;
+    
+    if (vakalar.length === 0) {
+        elements.vakaTabloBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="loading-row">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Henüz vaka bulunmuyor</span>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    vakalar.forEach(vaka => {
+        // Tarih formatlama
+        const formatDate = (dateString) => {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleDateString('tr-TR');
+        };
+        
+        // Plaka formatlama
+        const formatPlaka = (plaka) => {
+            if (!plaka) return '';
+            return plaka.toUpperCase().replace(/(\d{2})([A-Z]{1,3})(\d{2,4})/, '$1 $2 $3');
+        };
+        
+        html += `
+            <tr>
+                <td>${formatDate(vaka.created_at)}</td>
+                <td><strong>${formatPlaka(vaka.plaka)}</strong></td>
+                <td>${vaka.arac_sahibi}</td>
+                <td>${vaka.dosya_no}</td>
+                <td>${vaka.sigorta_sirketi || '-'}</td>
+                <td>${vaka.usta || 'Atanmadı'}</td>
+                <td>${formatDate(vaka.kaza_tarihi)}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="action-btn" onclick="showVakaDetail(${vaka.id})" title="Detaylar">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn" onclick="uploadFileModal(${vaka.id})" title="Dosya Yükle">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                        <button class="action-btn" onclick="editVaka(${vaka.id})" title="Düzenle">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    elements.vakaTabloBody.innerHTML = html;
+}
+
+// Sayfalama güncelle
+function updatePagination() {
+    if (!elements.sayfaBilgi) return;
+    
+    elements.sayfaBilgi.textContent = `Toplam ${totalRecords} kayıt - Sayfa ${currentPage}/${totalPages}`;
+    
+    // Buton durumları
+    if (elements.ilkSayfa) elements.ilkSayfa.disabled = currentPage === 1;
+    if (elements.oncekiSayfa) elements.oncekiSayfa.disabled = currentPage === 1;
+    if (elements.sonrakiSayfa) elements.sonrakiSayfa.disabled = currentPage === totalPages;
+    if (elements.sonSayfa) elements.sonSayfa.disabled = currentPage === totalPages;
+    
+    // Sayfa numaraları
+    if (elements.sayfaNumaralari) {
+        let pageHtml = '';
+        const maxPages = 5;
+        
+        let start = Math.max(1, currentPage - Math.floor(maxPages / 2));
+        let end = Math.min(totalPages, start + maxPages - 1);
+        
+        if (end - start + 1 < maxPages) {
+            start = Math.max(1, end - maxPages + 1);
+        }
+        
+        for (let i = start; i <= end; i++) {
+            pageHtml += `
+                <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                        onclick="goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        }
+        
+        elements.sayfaNumaralari.innerHTML = pageHtml;
+    }
+}
+
+// Sayfa değiştir
+function goToPage(page) {
+    currentPage = page;
+    loadCases(elements.aramaInput?.value || '', page);
+}
+
+// Vaka detay göster
+function showVakaDetail(vakaId) {
+    alert(`Vaka detayı: ${vakaId}\nBu özellik henüz tamamlanmadı.`);
+}
+
+// Dosya yükleme modalı
+function uploadFileModal(vakaId) {
+    const modal = document.getElementById('dosya-yukle-modal');
+    const vakaIdInput = document.getElementById('modal-vaka-id');
+    
+    if (modal && vakaIdInput) {
+        vakaIdInput.value = vakaId;
+        modal.classList.remove('gizli');
+    }
+}
+
+// VAKA DÜZENLEME FONKSİYONU (YENİ EKLENDİ)
+function editVaka(vakaId) {
+    console.log('✏️ Vaka düzenle:', vakaId);
+    
+    // Önce vaka detaylarını getir
+    fetch(`/api/vaka/${vakaId}`, {
+        credentials: 'include'
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Vaka bulunamadı');
+        return response.json();
+    })
+    .then(vaka => {
+        console.log('📋 Vaka verileri:', vaka);
+        
+        // Formu doldur
+        document.getElementById('duzenle-vaka-id').value = vaka.id;
+        document.getElementById('duzenle-dosya-no').value = vaka.dosya_no || '';
+        document.getElementById('duzenle-plaka').value = vaka.plaka || '';
+        document.getElementById('duzenle-arac-sahibi').value = vaka.arac_sahibi || '';
+        document.getElementById('duzenle-telefon').value = vaka.telefon || '';
+        document.getElementById('duzenle-email').value = vaka.email || '';
+        document.getElementById('duzenle-kaza-tarihi').value = vaka.kaza_tarihi || '';
+        document.getElementById('duzenle-sigorta-sirketi').value = vaka.sigorta_sirketi || '';
+        document.getElementById('duzenle-durum').value = vaka.durum || 'BEKLEMEDE';
+        document.getElementById('duzenle-notlar').value = vaka.notlar || '';
+        
+        // Modalı aç
+        document.getElementById('vaka-duzenle-modal').classList.remove('gizli');
+    })
+    .catch(error => {
+        console.error('❌ Vaka detay hatası:', error);
+        alert('Vaka bilgileri yüklenemedi');
+    });
+}
+
+// Vaka düzenleme formunu kaydet
+async function saveVakaEdit() {
+    const vakaId = document.getElementById('duzenle-vaka-id').value;
+    
+    const updateData = {
+        dosya_no: document.getElementById('duzenle-dosya-no').value,
+        plaka: document.getElementById('duzenle-plaka').value,
+        arac_sahibi: document.getElementById('duzenle-arac-sahibi').value,
+        telefon: document.getElementById('duzenle-telefon').value,
+        email: document.getElementById('duzenle-email').value,
+        kaza_tarihi: document.getElementById('duzenle-kaza-tarihi').value,
+        sigorta_sirketi: document.getElementById('duzenle-sigorta-sirketi').value,
+        durum: document.getElementById('duzenle-durum').value,
+        notlar: document.getElementById('duzenle-notlar').value
+    };
+    
+    try {
+        const response = await fetch(`/api/vaka/${vakaId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(updateData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Vaka başarıyla güncellendi!');
+            closeEditModal();
+            loadCases(elements.aramaInput?.value || '', currentPage);
+        } else {
+            alert('❌ Hata: ' + result.error);
+        }
+    } catch (error) {
+        console.error('❌ Güncelleme hatası:', error);
+        alert('❌ Güncelleme hatası: ' + error.message);
+    }
+}
+
+// Düzenleme modalını kapat
+function closeEditModal() {
+    document.getElementById('vaka-duzenle-modal').classList.add('gizli');
+    document.getElementById('vaka-duzenle-formu').reset();
+}
+
+// Sayfa gösterme
+function showLoginPage() {
+    if (elements.girisSayfasi) elements.girisSayfasi.classList.remove('gizli');
+    if (elements.anaSayfa) elements.anaSayfa.classList.add('gizli');
+}
+
+function showMainPage() {
+    if (elements.girisSayfasi) elements.girisSayfasi.classList.add('gizli');
+    if (elements.anaSayfa) elements.anaSayfa.classList.remove('gizli');
+    
+    if (currentUser && elements.kullaniciIsim) {
+        elements.kullaniciIsim.textContent = currentUser.fullname;
+    }
+}
+
+// Event listener'ları kur
+function setupEventListeners() {
+    // Giriş formu
+    if (elements.girisFormu) {
+        elements.girisFormu.addEventListener('submit', (e) => {
+            e.preventDefault();
+            login();
+        });
+    }
+    
+    // Çıkış butonu
+    if (elements.cikisBtn) {
+        elements.cikisBtn.addEventListener('click', () => {
+            logout();
+        });
+    }
+    
+    // Arama
+    if (elements.aramaBtn) {
+        elements.aramaBtn.addEventListener('click', () => {
+            loadCases(elements.aramaInput.value);
+        });
+    }
+    
+    if (elements.aramaInput) {
+        elements.aramaInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadCases(elements.aramaInput.value);
+            }
+        });
+    }
+    
+    // Sayfalama
+    if (elements.ilkSayfa) {
+        elements.ilkSayfa.addEventListener('click', () => {
+            goToPage(1);
+        });
+    }
+    
+    if (elements.oncekiSayfa) {
+        elements.oncekiSayfa.addEventListener('click', () => {
+            if (currentPage > 1) goToPage(currentPage - 1);
+        });
+    }
+    
+    if (elements.sonrakiSayfa) {
+        elements.sonrakiSayfa.addEventListener('click', () => {
+            if (currentPage < totalPages) goToPage(currentPage + 1);
+        });
+    }
+    
+    if (elements.sonSayfa) {
+        elements.sonSayfa.addEventListener('click', () => {
+            goToPage(totalPages);
+        });
+    }
+    
+    // Yeni dosya butonu
+    if (elements.yeniDosyaBtn) {
+        elements.yeniDosyaBtn.addEventListener('click', () => {
+            document.getElementById('yeni-vaka-modal').classList.remove('gizli');
+        });
+    }
+    
+    // Vaka düzenleme formu
+    const duzenleForm = document.getElementById('vaka-duzenle-formu');
+    if (duzenleForm) {
+        duzenleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveVakaEdit();
+        });
+    }
+    
+    // Düzenleme modalı kapatma
+    document.getElementById('duzenle-modal-kapat')?.addEventListener('click', closeEditModal);
+    document.getElementById('duzenle-iptal')?.addEventListener('click', closeEditModal);
+}
 
 // Uygulamayı başlat
-document.addEventListener('DOMContentLoaded', () => {
-    uygulama.baslat();
-});
+async function init() {
+    console.log('🔧 Uygulama başlatılıyor...');
+    setupEventListeners();
+    await checkSession();
+}
+
+// Global fonksiyonlar
+window.goToPage = goToPage;
+window.showVakaDetail = showVakaDetail;
+window.uploadFileModal = uploadFileModal;
+window.editVaka = editVaka;
+window.saveVakaEdit = saveVakaEdit;
+window.closeEditModal = closeEditModal;
+
+// Sayfa yüklendiğinde başlat
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
