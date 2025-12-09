@@ -257,36 +257,83 @@ app.get('/api/istatistikler', authRequired, (req, res) => {
 });
 
 // 7. Tüm vakaları getir
+// server.js'de bulun ve değiştirin:
 app.get('/api/vakalar', authRequired, (req, res) => {
     const arama = req.query.arama || '';
-    const durum = req.query.durum || '';
+    const durumFiltre = req.query.durum || '';
+    const sayfa = parseInt(req.query.sayfa) || 1;
+    const sayfaBoyutu = parseInt(req.query.sayfaBoyutu) || 25;
+    const siralama = req.query.siralama || 'created_at DESC';
     
-    let sorgu = `
-        SELECT c.*, u.fullname as olusturan,
-               (SELECT COUNT(*) FROM belgeler WHERE case_id = c.id) as belge_sayisi
-        FROM cases c
-        LEFT JOIN users u ON c.created_by = u.id
-        WHERE 1=1
-    `;
+    const offset = (sayfa - 1) * sayfaBoyutu;
     
+    // WHERE koşulları
+    let whereKosullari = 'WHERE 1=1';
     const parametreler = [];
     
     if (arama) {
-        sorgu += ` AND (c.plaka LIKE ? OR c.arac_sahibi LIKE ? OR c.dosya_no LIKE ?)`;
+        whereKosullari += ` AND (c.plaka LIKE ? OR c.arac_sahibi LIKE ? OR c.dosya_no LIKE ?)`;
         const aramaTerim = `%${arama}%`;
         parametreler.push(aramaTerim, aramaTerim, aramaTerim);
     }
     
-    if (durum) {
-        sorgu += ` AND c.durum = ?`;
-        parametreler.push(durum);
+    if (durumFiltre) {
+        whereKosullari += ` AND c.durum = ?`;
+        parametreler.push(durumFiltre);
     }
     
-    sorgu += ` ORDER BY c.created_at DESC`;
+    // Toplam kayıt sayısı
+    const saymaSorgusu = `
+        SELECT COUNT(*) as toplam 
+        FROM cases c 
+        ${whereKosullari}
+    `;
     
-    db.all(sorgu, parametreler, (err, vakalar) => {
+    // Vakalar sorgusu
+    const vakalarSorgusu = `
+        SELECT c.*, u.fullname as olusturan,
+               (SELECT COUNT(*) FROM belgeler WHERE case_id = c.id) as belge_sayisi
+        FROM cases c
+        LEFT JOIN users u ON c.created_by = u.id
+        ${whereKosullari}
+        ORDER BY ${siralamaGuvenli(siralama)}
+        LIMIT ? OFFSET ?
+    `;
+    
+    function siralamaGuvenli(siralama) {
+        const allowedColumns = ['created_at', 'plaka', 'arac_sahibi', 'durum'];
+        const allowedDirections = ['ASC', 'DESC'];
+        
+        const parts = siralama.split(' ');
+        const column = parts[0];
+        const direction = parts[1] || 'ASC';
+        
+        if (!allowedColumns.includes(column) || !allowedDirections.includes(direction.toUpperCase())) {
+            return 'created_at DESC';
+        }
+        
+        return `${column} ${direction}`;
+    }
+    
+    db.get(saymaSorgusu, parametreler, (err, sayim) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json(vakalar);
+        
+        const toplamKayit = sayim.toplam;
+        const toplamSayfa = Math.ceil(toplamKayit / sayfaBoyutu);
+        
+        const vakaParametreler = [...parametreler, sayfaBoyutu, offset];
+        
+        db.all(vakalarSorgusu, vakaParametreler, (err, vakalar) => {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            res.json({
+                vakalar,
+                toplamKayit,
+                toplamSayfa,
+                suankiSayfa: sayfa,
+                sayfaBoyutu
+            });
+        });
     });
 });
 
